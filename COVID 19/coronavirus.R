@@ -1,8 +1,10 @@
 library(magrittr)
 library(data.table)
 library(ggplot2)
+library(quantreg)
 
 data_type <- 'fallecidos' #'fallecidos' # casos
+regression_type = 'l1' # 'l1', 'l2'
 ccaas <- c('Madrid', 'Cataluña')
 next_days <- 1:7
 min_cases <- list()
@@ -45,13 +47,18 @@ for(ccaa in ccaas){
   min_day <- data_ccaa[, min(dia)] 
   data_ccaa %>% 
     .[, diff_dias := as.numeric(dia - min_day)] %>% 
-    .[, log_value := log(value)]
-  linear <- lm(log_value~diff_dias, data_ccaa)
+    .[, log_value := log(value)] ->
+    data_ccaa
+  if(regression_type == 'l1'){
+    model <- rq(log_value~diff_dias, tau=0.5, data_ccaa)
+  }else{
+    model <- lm(log_value~diff_dias, data_ccaa)
+  }
   max_day_diff <- data_ccaa[, max(diff_dias)]
   max_day <- data_ccaa[, max(dia)]
   
   predict_df <- data.frame(diff_dias = as.numeric(max_day_diff + next_days))
-  predict_value <- exp(predict(linear, predict_df))
+  predict_value <- exp(predict(model, predict_df))
   predict_dia <- max_day + next_days
   
   df_prediction_ccaa_original <- data.frame(
