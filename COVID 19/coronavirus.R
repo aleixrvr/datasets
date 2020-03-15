@@ -2,9 +2,12 @@ library(magrittr)
 library(data.table)
 library(ggplot2)
 
-data_type <- 'fallecidos' # casos
+data_type <- 'fallecidos' #'fallecidos' # casos
 ccaas <- c('Madrid', 'Cataluña')
 next_days <- 1:7
+min_cases <- list()
+min_cases['Madrid'] = 10
+min_cases['Cataluña'] = 0
 
 'ccaa_covid19_' %>% 
   paste0(data_type) %>% 
@@ -38,7 +41,7 @@ covid %>%
 
 df_prediction <- data.frame()
 for(ccaa in ccaas){
-  data_ccaa <- covid[value>0 & CCAA == ccaa] # From when there was a first death
+  data_ccaa <- covid[value>min_cases[ccaa] & CCAA == ccaa] # From when there was a first death in exponential regime
   min_day <- data_ccaa[, min(dia)] 
   data_ccaa %>% 
     .[, diff_dias := as.numeric(dia - min_day)] %>% 
